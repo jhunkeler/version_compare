@@ -1,0 +1,45 @@
+name: CMake
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  tests:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: Debug (Linux)
+            os: ubuntu-latest
+            build_type: Debug
+            
+          - name: Debug (MacOS)
+            os: macos-latest
+            build_type: Debug
+
+          - name: Release (Linux)
+            os: ubuntu-latest
+            build_type: Release
+            
+          - name: Release (MacOS)
+            os: macos-latest
+            build_type: Release
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }}
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: ctest -V -C ${{ matrix.build_type }}
+      

@@ -11,4 +11,16 @@ else()
     add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
-add_executable(version_compare main.c)
+include(CTest)
+
+add_library(vcmp STATIC version_compare.c version_compare.h)
+target_compile_definitions(vcmp PUBLIC ENABLE_TESTING=1)
+
+add_executable(test_version_compare tests.c version_compare.h)
+target_link_libraries(test_version_compare vcmp)
+
+add_test(test test_version_compare)
+add_executable(version_compare main.c version_compare.h)
+target_link_libraries(version_compare vcmp)
+
+
