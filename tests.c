@@ -77,12 +77,47 @@ static struct TestCase_version_compare test_cases_version_compare[] = {
     {"1.0a", ">=", "1.0.0", 1},
     {"1.0a", "!=", "1.0.0", 1},
 
+    {"1.0.3", "=", "2.0.0", 0},
+    {"1.0.3", "<", "2.0.0", 1},
+    {"1.0.3", "<=", "2.0.0", 1},
+    {"1.0.3", ">", "2.0.0", 0},
+    {"1.0.3", ">=", "2.0.0", 0},
+    {"1.0.3", "!=", "2.0.0", 1},
+
     {"2022.1", "=", "2022.4", 0},
     {"2022.1", "<", "2022.4", 1},
     {"2022.1", "<=", "2022.4", 1},
     {"2022.1", ">", "2022.4", 0},
     {"2022.1", ">=", "2022.4", 0},
     {"2022.1", "!=", "2022.4", 1},
+
+    {"1:2022.1", "=", "2022.4", 0},
+    {"1:2022.1", "<", "2022.4", 1},
+    {"1:2022.1", "<=", "2022.4", 1},
+    {"1:2022.1", ">", "2022.4", 0},
+    {"1:2022.1", ">=", "2022.4", 0},
+    {"1:2022.1", "!=", "2022.4", 1},
+
+    {"1:2022.1", "=", "2:2022.4", 0},
+    {"1:2022.1", "<", "2:2022.4", 1},
+    {"1:2022.1", "<=", "2:2022.4", 1},
+    {"1:2022.1", ">", "2:2022.4", 0},
+    {"1:2022.1", ">=", "2:2022.4", 0},
+    {"1:2022.1", "!=", "2:2022.4", 1},
+
+    {"2:2022.4", "=", "1:2022.1", 0},
+    {"2:2022.4", "<", "1:2022.1", 0},
+    {"2:2022.4", "<=", "1:2022.1", 0},
+    {"2:2022.4", ">", "1:2022.1", 1},
+    {"2:2022.4", ">=", "1:2022.1", 1},
+    {"2:2022.4", "!=", "1:2022.1", 1},
+
+    {"2022.1", "=", "2:2022.1", 0},
+    {"2022.1", "<", "2:2022.1", 1},
+    {"2022.1", "<=", "2:2022.1", 1},
+    {"2022.1", ">", "2:2022.1", 0},
+    {"2022.1", ">=", "2:2022.1", 0},
+    {"2022.1", "!=", "2:2022.1", 1},
 
     {"2022.4", "=", "2022.1", 0},
     {"2022.4", "<", "2022.1", 0},
@@ -109,7 +144,7 @@ static int run_cases_version_compare(struct TestCase_version_compare tests[], si
         int op = version_parse_operator(test->op);
         result = version_compare(op, test->a, test->b);
 
-        printf("%s %s %s is %s", test->a, test->op, test->b, result ? "TRUE" : "FALSE" );
+        printf("%s %s %s is %s (%d)", test->a, test->op, test->b, result ? "TRUE" : "FALSE" , result);
         if (test->result != result) {
             printf("    [FAILED: got %d, expected %d]\n", result, test->result);
             failed++;
@@ -132,7 +167,7 @@ static int run_cases_string(struct TestCase_strings tests[], size_t size, strfn 
         fn(&s);
         result = strcmp(test->result, s);
 
-        printf("'%s' is %s", s, !result ? "CORRECT" : "INCORRECT" );
+        printf("'%s' is %s (%d)", s, !result ? "CORRECT" : "INCORRECT", !result );
         if (result) {
             printf("    [FAILED: got '%s', expected '%s']\n", s, test->result);
             failed++;
@@ -144,7 +179,6 @@ static int run_cases_string(struct TestCase_strings tests[], size_t size, strfn 
     return failed;
 }
 
-
 char **make_argv(int *argc, char *argv[]) {
     char **args;
     *argc = 0;
@@ -153,7 +187,6 @@ char **make_argv(int *argc, char *argv[]) {
         *argc = *argc + 1;
     }
 
-    //char **args = calloc(*argc + 1, sizeof(*argv));
     args = calloc(*argc + 1, sizeof(*argv));
     if (!args) {
         perror("unable to allocate args array");
@@ -279,7 +312,7 @@ static int run_cases_program_split(struct TestCase_version_compare tests[], size
         struct TestCase_version_compare *test = &tests[i];
         result = run_program((char *[]){test->a, test->op, test->b, NULL});
 
-        printf("%s %s %s is %s", test->a, test->op, test->b, result ? "TRUE" : "FALSE" );
+        printf("%s %s %s is %s (%d)", test->a, test->op, test->b, result ? "TRUE" : "FALSE", result);
         if (test->result != result) {
             printf("    [FAILED: got %d, expected %d]\n", result, test->result);
             failed++;
@@ -300,7 +333,7 @@ static int run_cases_program_standalone(struct TestCase_version_compare tests[],
         snprintf(data, sizeof(data) - 1, "%s %s %s", test->a, test->op, test->b);
         result = run_program((char *[]){data, NULL});
 
-        printf("%s %s %s is %s", test->a, test->op, test->b, result ? "TRUE" : "FALSE" );
+        printf("%s %s %s is %s (%d)", test->a, test->op, test->b, result ? "TRUE" : "FALSE", result);
         if (test->result != result) {
             printf("    [FAILED: got %d, expected %d]\n", result, test->result);
             failed++;

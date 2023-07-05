@@ -5,6 +5,7 @@
 #define LT 1 << 2
 #define EQ 1 << 3
 #define NOT 1 << 4
+#define EPOCH_MOD 100
 
 int isempty(char *str);
 char *lstrip(char **s);

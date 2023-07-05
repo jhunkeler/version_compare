@@ -128,7 +128,7 @@ char *collapse_whitespace(char **s) {
  * @return -1 on error
  */
 int version_sum(const char *str) {
-    int result;
+    int i, result, epoch;
     char *s, *ptr, *end;
 
     if (!str || isempty(str)) {
@@ -136,6 +136,7 @@ int version_sum(const char *str) {
     }
 
     result = 0;
+    epoch = 0;
     s = strdup(str);
     if (!s) {
         return -1;
@@ -146,17 +147,44 @@ int version_sum(const char *str) {
     // Parsing stops at the first non-alpha, non-'.' character
     // Digits are processed until the first invalid character
     // I'm torn whether this should be considered an error
+    i = 0;
     while (end != NULL) {
-        result += (int) strtoul(ptr, &end, 10);
+        int tmp_result = 0;
+
+        tmp_result = (int) strtoul(ptr, &end, 10);
+
+        // Circumvent a bug which allows a smaller version to be greater
+        // than a larger version
+        // Bug:
+        //   1.0.3 == 1 + 0 + 3 = 4
+        //   2.0.0 == 2 + 0 + 0 = 2
+        // Correction:
+        //   ((1 * EPOCH_MOD) + 1).0.3 = 104
+        //   ((2 * EPOCH_MOD) + 2).0.0 = 202
+        if (!i && tmp_result && *end != ':') {
+            result += tmp_result * EPOCH_MOD;
+            i++;
+        }
+
         ptr = end;
-        if (*ptr == '.')
+        if (*ptr == '.' || *ptr == '-') {
             ptr++;
+        }
+        else if (!epoch && *ptr == ':') {
+            epoch = 1;
+            result += EPOCH_MOD;
+            ptr++;
+        }
         else if (isalpha(*ptr)) {
             result += *ptr - ('a' - 1);
             ptr++;
         }
         else
             end = NULL;
+
+        if (tmp_result) {
+            result += tmp_result;
+        }
     }
 
     free(s);
@@ -204,6 +232,12 @@ int version_parse_operator(char *str) {
     return result;
 }
 
+int version_has_epoch(const char *str) {
+    char *result;
+    result = strchr(str, ':');
+    return result ? 1 : 0;
+}
+
 /**
  * Compare version strings based on flag(s)
  * @param flags verison operators
@@ -226,6 +260,14 @@ int version_compare(int flags, const char *aa, const char *bb) {
     result_b = version_sum(bb);
     if (result_b < 0)
         return -1;
+
+
+    if ((version_has_epoch(aa) && !version_has_epoch(bb))) {
+        result_a -= EPOCH_MOD;
+    }
+    if (!version_has_epoch(aa) && version_has_epoch(bb)) {
+        result_b -= EPOCH_MOD;
+    }
 
     result = 0;
     if (flags & GT && flags & EQ)
